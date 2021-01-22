@@ -17,8 +17,8 @@
 
 // macro representing the path to the desired input file
 #define BASICS_PATH		"resources/csv/basics.csv"
-#define DUPLICATES_PATH "resources/csv/basics.csv"
-#define ADVANCED_PATH   "resources/csv/basics.csv"
+#define DUPLICATES_PATH "resources/csv/duplicates.csv"
+#define ADVANCED_PATH   "resources/csv/advanced.csv"
 
 // macro representing the error that has been encountered
 #define FILE_OPEN_ERROR   "error opening the requested .csv file"

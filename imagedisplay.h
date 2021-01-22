@@ -27,37 +27,45 @@
 #define LOWER_LIMIT cv::Scalar(60, 100, 100)
 #define UPPER_LIMIT cv::Scalar(60, 255, 255)
 
-namespace id
+/***************** structures *******************/
+
+struct ENTITY
 {
-	/***************** functions *******************/
+	// stores the id of the entity's countour
+	int cont_id;
+	// stores the properties of the entity
+	std::tuple<int, int, int, int> body;
+};
 
-	/**
-	 * This function is used to display the field data in the debug console
-	 *
-	 * @param
-	 * @param
-	 */
-	void debug_field_data(int line_count, int col_count);
+/***************** functions *******************/
 
-	/**
-	 * This function is used to retrieve the field data from the input manager
-	 *
-	 */
-	void init_field_data();
+/**
+	* This function is used to display the field data in the debug console
+	*
+	* @param
+	* @param
+	*/
+void debug_field_data(int line_count, int col_count);
 
-	/**
-	 * This function is used to create the field based on the collected data
-	 *
-	 * @return
-	 */
-	cv::Mat init_ui_field();
+/**
+	* This function is used to retrieve the field data from the input manager
+	*
+	*/
+void init_field_data();
 
-	/**
-	 * This function is used to create the field based on the collected data
-	 *
-	 * @return
-	 */
-	cv::Mat get_countours(cv::Mat map, cv::Mat drawing);
-}
+/**
+	* This function is used to create the field based on the collected data
+	*
+	* @return
+	*/
+cv::Mat init_ui_field();
+
+/**
+	* This function is used to create the field based on the collected data
+	*
+	* @return
+	*/
+cv::Mat get_countours(cv::Mat map, cv::Mat drawing);
+
 
 #endif

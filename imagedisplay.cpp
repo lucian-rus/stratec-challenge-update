@@ -3,32 +3,27 @@
 
 #include <stdio.h>
 
-#define ENTITY std::vector<std::tuple<int, int, int, int>>
-
 /************************* globals **************************/
 
 int WIDTH;
 int HEIGHT;
 int ENTITY_COUNTER;
 
+std::vector<ENTITY> ENTITIES;
+
 std::vector<std::vector<int>> FIELD;
 
-/**
- * This vector contains the entities found in the field
- * <x, y, width, height>
- */
-ENTITY ENTITIES;
-
-
 std::vector<std::vector<cv::Point>> CONTOURS;
+
+
 
 /*********************** functions *************************/
 
 void debug_field_data(int line_count, int col_count)
 {
-	for (int i = 0; i < FIELD.size(); i++)
+	for (size_t i = 0; i < FIELD.size(); i++)
 	{
-		for (int j = 0; j < FIELD[i].size(); j++)
+		for (size_t j = 0; j < FIELD[i].size(); j++)
 			std::cout << FIELD[i][j];
 		std::cout << std::endl;
 	}
@@ -44,7 +39,7 @@ void init_field_data()
 
 	// try getting level data
 	try {
-		std::tie(line_count, col_count, FIELD) = im::get_input_data(LEVEL_BASICS);
+		std::tie(line_count, col_count, FIELD) = im::get_input_data(LEVEL_DUPLICATES);
 	}
 	catch (std::string e) { std::cout << e << std::endl; }
 
@@ -58,8 +53,8 @@ cv::Mat init_ui_field()
 {
 	cv::Mat window(cv::Size(WIDTH, HEIGHT), CV_8UC3, BLACK);
 
-	for (int i = 0; i < FIELD.size(); i++)
-		for (int j = 0; j < FIELD[i].size(); j++)
+	for (size_t i = 0; i < FIELD.size(); i++)
+		for (size_t j = 0; j < FIELD[i].size(); j++)
 		{
 			if (FIELD[i][j] == 0)
 			{
@@ -111,27 +106,29 @@ cv::Mat get_countours(cv::Mat map, cv::Mat drawing)
 		int height = int(boundRect[i].height / SIZE_MULTIPLIER + 1);
 		int width = int(boundRect[i].width / SIZE_MULTIPLIER + 1);
 
-		// debug purposes
-		std::cout << "entity " << i << ": " << width << " " << height << std::endl;
+		//debug purposes
+		//std::cout << "entity " << i << ": " << width << " " << height << std::endl;
+
+		CONTOURS.push_back(contours[i]);
 
 		if (width == 1 || height == 1)
 			continue;
 
-		CONTOURS.push_back(contours[i]);
-
 		// applies a correction of 2 to the width and height of the entity with respect to the bounding box
-		width += BOUNDARY_CORRECTION;
+		width  += BOUNDARY_CORRECTION;
 		height += BOUNDARY_CORRECTION;
 
 		int x = int(boundRect[i].tl().x / SIZE_MULTIPLIER) - 1;
 		int y = int(boundRect[i].tl().y / SIZE_MULTIPLIER) - 1;
 
-		ENTITIES.push_back(std::make_tuple(x, y, width, height));
+		ENTITIES.push_back(ENTITY());
+		ENTITIES[entity_counter].cont_id = i;
+		ENTITIES[entity_counter].body    = std::make_tuple(x, y, width, height);
 
 		entity_counter++;
 	}
 
-	std::cout << "number of entities: " << entity_counter << std::endl;
+	ENTITY_COUNTER = entity_counter;
 
 	// draws entity boundaries
 	for (size_t i = 0; i < contours.size(); i++)
@@ -157,7 +154,7 @@ cv::Mat get_countours(cv::Mat map, cv::Mat drawing)
 }
 
 // compares the first value of two given tuples
-bool coord_comp(std::tuple<int, int, int, int> left, std::tuple<int, int, int, int> right) { return std::get<0>(left) < std::get<0>(right); }
+bool coord_comp(ENTITY left, ENTITY right) { return std::get<0>(left.body) < std::get<0>(right.body); }
 
 int main()
 {
@@ -168,20 +165,29 @@ int main()
 	cv::Mat output = ui_map.clone();
 	get_countours(ui_map, output);
 
-	// sort the vector
+	// solves level 1
+	std::cout << "number of non-noise entities: " << ENTITY_COUNTER << std::endl;
+
+	// solves level 2
 	std::sort(ENTITIES.begin(), ENTITIES.begin() + ENTITIES.size(), coord_comp);
 	for (auto i : ENTITIES)
-		printf("(%d, %d) W: %d, H: %d\n", std::get<0>(i), std::get<1>(i), std::get<2>(i), std::get<3>(i));
-
-
-	// compare the contours of the entities (0 if identical)
-	for (size_t i = 0; i < CONTOURS.size(); i++)
-		for (size_t j = 0; j < CONTOURS.size(); j++)
+		printf("(%d, %d) W: %d, H: %d\n", std::get<0>(i.body), std::get<1>(i.body), std::get<2>(i.body), std::get<3>(i.body));
+	
+	// solves level 3
+	for (size_t i = 0; i < ENTITIES.size(); i++) 
+		for (size_t j = 0; j < ENTITIES.size(); j++)
 		{
-			if (i == j) continue;
-			double match = cv::matchShapes(CONTOURS[i], CONTOURS[j], 1, 0.0);
-			printf("%d matches %d by %d\n", i, j, match);
-		}
+			if (ENTITIES[i].cont_id == ENTITIES[j].cont_id) continue;
 
+			double match = cv::matchShapes(CONTOURS[ENTITIES[i].cont_id], CONTOURS[ENTITIES[j].cont_id], 1, 0.0);
+			if (match == 0)
+			{
+				printf("(%d, %d) W: %d, H: %d ",   std::get<0>(ENTITIES[i].body), std::get<1>(ENTITIES[i].body),
+												   std::get<2>(ENTITIES[i].body), std::get<3>(ENTITIES[i].body));
+				printf("also found at (%d, %d)\n", std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body));
+			}
+			
+		}
+	 
 	return 0;
 }
