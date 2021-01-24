@@ -48,14 +48,14 @@ namespace im
 
 	std::tuple<int, int, std::vector<std::vector<int>>> get_input_data(int level_id)
 	{
-		if (level_id == LEVEL_BASICS)
-			return std::make_tuple(LINE_COUNT, COL_COUNT, get_file_input(BASICS_PATH));
+		if (level_id == LEVEL_1)
+			return std::make_tuple(LINE_COUNT, COL_COUNT, get_file_input(LEVEL_1_PATH));
 
-		if (level_id == LEVEL_DUPLICATES)
-			return std::make_tuple(LINE_COUNT, COL_COUNT, get_file_input(DUPLICATES_PATH));
+		if (level_id == LEVEL_2)
+			return std::make_tuple(LINE_COUNT, COL_COUNT, get_file_input(LEVEL_2_PATH));
 
-		if (level_id == LEVEL_ADVANCED)
-			return std::make_tuple(LINE_COUNT, COL_COUNT, get_file_input(ADVANCED_PATH));
+		if (level_id == LEVEL_3)
+			return std::make_tuple(LINE_COUNT, COL_COUNT, get_file_input(LEVEL_3_PATH));
 
 		throw std::invalid_argument(INVALID_ID_CALL);
 	}
