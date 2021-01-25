@@ -14,6 +14,7 @@
 #define LEVEL_1 1
 #define LEVEL_2 2
 #define LEVEL_3 3
+#define LEVEL_4 4
 
 // macro representing the path to the desired input file
 #define LEVEL_1_PATH "resources/csv/basics.csv"

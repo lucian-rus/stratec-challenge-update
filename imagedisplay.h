@@ -55,6 +55,8 @@ struct ENTITY
 	int cont_id;
 	// stores the properties of the entity
 	std::tuple<int, int, int, int> body;
+	// stores a cropped version of the entity
+	cv::Mat shape;
 };
 
 /***************** functions *******************/

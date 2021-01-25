@@ -14,10 +14,8 @@ int ENTITY_COUNTER;
 
 cv::Mat OUTPUT(cv::Size(WIDTH, HEIGHT), CV_8UC3, BLACK);
 
-std::vector<ENTITY> ENTITIES;
-
-std::vector<std::vector<int>> FIELD;
-
+std::vector<ENTITY>                 ENTITIES;
+std::vector<std::vector<int>>       FIELD;
 std::vector<std::vector<cv::Point>> CONTOURS;
 
 /*********************** functions *************************/
@@ -161,6 +159,7 @@ int process_mat(cv::Mat target, cv::Mat output)
 		ENTITIES.push_back(ENTITY());
 		ENTITIES[ENTITY_COUNTER].body    = std::make_tuple(x, y, width, height);
 		ENTITIES[ENTITY_COUNTER].cont_id = int(i);
+		ENTITIES[ENTITY_COUNTER].shape   = target(boundRect[i]);
 
 		ENTITY_COUNTER++;
 	}
@@ -174,6 +173,7 @@ int process_mat(cv::Mat target, cv::Mat output)
 		if (width == 1 || height == 1)
 			continue;
 
+		// arbitrary values based on personal taste on visuals
 		int tl_x = boundRect[i].tl().x - SIZE_MULTIPLIER + 5;
 		int tl_y = boundRect[i].tl().y - SIZE_MULTIPLIER + 5;
 
@@ -181,6 +181,7 @@ int process_mat(cv::Mat target, cv::Mat output)
 		int br_y = boundRect[i].br().y + SIZE_MULTIPLIER - 5;
 
 		cv::rectangle(output, cv::Point(tl_x, tl_y), cv::Point(br_x, br_y), RED, 5);
+		cv::rectangle(output, cv::Point(boundRect[i].tl().x - 10, boundRect[i].tl().y - 10), cv::Point(boundRect[i].tl().x - 1, boundRect[i].tl().y - 1), BLUE, cv::FILLED);
 	}
 
 	OUTPUT = output;
@@ -189,6 +190,29 @@ int process_mat(cv::Mat target, cv::Mat output)
 }
 
 bool coord_comp(ENTITY left, ENTITY right) { return std::get<0>(left.body) < std::get<0>(right.body); }
+
+bool equal(const cv::Mat& shape1, const cv::Mat& shape2)
+{
+	if ((shape1.rows != shape2.rows) || (shape1.cols != shape2.cols))
+		return false;
+	cv::Scalar s = cv::sum(shape1 - shape2);
+	return (s[0] == 0) && (s[1] == 0) && (s[2] == 0);
+}
+
+cv::Mat rotate_shape(cv::Mat shape, double angle)
+{
+	cv::Point2f center((shape.cols - 1) / 2.0, (shape.rows - 1) / 2.0);
+	cv::Mat rotation = cv::getRotationMatrix2D(center, angle, 1.0);
+	cv::Rect2f bbox = cv::RotatedRect(cv::Point2f(), shape.size(), angle).boundingRect2f();
+
+	rotation.at<double>(0, 2) += bbox.width / 2.0  - shape.cols / 2.0;
+	rotation.at<double>(1, 2) += bbox.height / 2.0 - shape.rows / 2.0;
+
+	cv::Mat target_shape;
+	cv::warpAffine(shape, target_shape, rotation, bbox.size());
+
+	return target_shape;
+}
 
 void export_entities_number()
 {
@@ -203,20 +227,69 @@ void export_entities_properties()
 
 void export_entities_duplicates()
 {
+	std::vector<int> skippable;
 	for (size_t i = 0; i < ENTITIES.size(); i++)
+	{
+		if (std::find(skippable.begin(), skippable.end(), i) != skippable.end()) continue;
+
+		std::vector<ENTITY> output;
+		output.push_back(ENTITIES[i]);
+
 		for (size_t j = 0; j < ENTITIES.size(); j++)
 		{
 			if (ENTITIES[i].cont_id == ENTITIES[j].cont_id) continue;
-
 			double match = cv::matchShapes(CONTOURS[ENTITIES[i].cont_id], CONTOURS[ENTITIES[j].cont_id], 1, 0.0);
-			if (match == 0)
-			{
-				printf(FORMAT_BASICS, std::get<0>(ENTITIES[i].body), std::get<1>(ENTITIES[i].body),
-					                  std::get<2>(ENTITIES[i].body), std::get<3>(ENTITIES[i].body));
-				printf("also found at (%d, %d)\n", std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body));
-			}
 
+			// debug matches between two entities
+			printf("((%d, %d), (%d, %d)): %f\n", std::get<0>(ENTITIES[i].body), std::get<1>(ENTITIES[i].body),
+											     std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body), match);
+
+			// while debugging, i found out that some entities have a contour match as following: 0 < match < 1*10^(-7) 
+			// because of this, changing the condition from (match == 0) to being lower than a certain threshold solves the problem
+			if (match <= 0.00001)
+			{
+				output.push_back(ENTITIES[j]);
+				skippable.push_back(j);
+			}
 		}
+
+		for (auto i : output)
+			if (output.size() == 1)
+				printf(FORMAT_BASICS, std::get<0>(i.body), std::get<1>(i.body), std::get<2>(i.body), std::get<3>(i.body));
+	}
+}
+
+void export_entities_rotated()
+{
+	std::vector<int> skippable;
+	for (size_t i = 0; i < ENTITIES.size(); i++)
+	{
+		if (std::find(skippable.begin(), skippable.end(), i) != skippable.end()) continue;
+
+		std::vector<ENTITY> output;
+		output.push_back(ENTITIES[i]);
+
+		for (size_t j = 0; j < ENTITIES.size(); j++)
+		{
+			if (ENTITIES[i].cont_id == ENTITIES[j].cont_id) continue;
+			double match = cv::matchShapes(CONTOURS[ENTITIES[i].cont_id], CONTOURS[ENTITIES[j].cont_id], 1, 0.0);
+
+			printf("((%d, %d), (%d, %d)): %f\n", std::get<0>(ENTITIES[i].body), std::get<1>(ENTITIES[i].body),
+				std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body), match);
+
+			if (match <= 0.00001)
+			{
+				output.push_back(ENTITIES[j]);
+				skippable.push_back(j);
+				// compares if the two shapes are the same, to check if there is any rotation
+				if (equal(ENTITIES[i].shape, ENTITIES[j].shape)) { std::cout << "shape also match" << std::endl; continue; }
+				
+				if (equal(ENTITIES[i].shape, rotate_shape(ENTITIES[j].shape,  90))) { std::cout << "shape also match at 90"  << std::endl; continue; }
+				if (equal(ENTITIES[i].shape, rotate_shape(ENTITIES[j].shape, 180))) { std::cout << "shape also match at 180" << std::endl; continue; }
+				if (equal(ENTITIES[i].shape, rotate_shape(ENTITIES[j].shape, 270))) { std::cout << "shape also match at 270" << std::endl; continue; }
+			}
+		}
+	}
 }
 
 void id_entry_point(int selected_level, cv::Mat target)
@@ -231,6 +304,7 @@ void id_entry_point(int selected_level, cv::Mat target)
 	if (selected_level == LEVEL_1) export_entities_number();
 	if (selected_level == LEVEL_2) export_entities_properties();
 	if (selected_level == LEVEL_3) export_entities_duplicates();
+	if (selected_level == LEVEL_4) export_entities_rotated();
 }
 
 void reset_globals()
@@ -255,11 +329,11 @@ void console_command()
 		std::cout << "> ";
 		if (input == "start")
 		{
-			if (!init_field_data(LEVEL_2)) { std::cout << "error trying to import data" << std::endl; break;  }
-			debug_field_data();
+			if (!init_field_data(LEVEL_3)) { std::cout << "error trying to import data" << std::endl; break;  }
+			//debug_field_data();
 
 			cv::Mat window = update_ui_field();
-			id_entry_point(LEVEL_2, window);
+			id_entry_point(LEVEL_4, window);
 		}
 		if (input == "exit") { exit(EXIT_SUCCESS); }
 	}
