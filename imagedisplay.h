@@ -14,6 +14,12 @@
 #define SIZE_MULTIPLIER     10
 #define BOUNDARY_CORRECTION  2
 
+// macro representing the desired level
+#define LEVEL_1 1
+#define LEVEL_2 2
+#define LEVEL_3 3
+#define LEVEL_4 4
+
 // macros used for the basic colors
 #define WHITE  cv::Scalar(255, 255, 255)
 #define BLACK  cv::Scalar(  0,   0,   0)
@@ -25,6 +31,7 @@
 #define ENTITY_C cv::Scalar(152, 255, 152)
 #define AXIS_C   cv::Scalar(220, 220, 220)
 #define FIELD_C  cv::Scalar(105, 105, 105)
+#define WINDOW   "stratec-update-challenge"
 
 // macros used for the color detection range
 #define LOWER_LIMIT cv::Scalar(60, 100, 100)
@@ -40,9 +47,7 @@
 #define DEBUG_OFF 0
 
 // macros used as formatters
-#define FORMAT_BASICS     "(%d, %d) W: %d, H: %d\n"
-#define FORMAT_DUPLICATES ""
-#define FORMAT_ADVANCED   ""
+#define FORMAT_BASICS "(%d, %d) W: %d, H: %d\n"
 
 // error macros
 #define PREPROCESS_ERROR "error while preprocessing image"

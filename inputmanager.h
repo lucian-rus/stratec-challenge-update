@@ -11,15 +11,14 @@
 #define NULL 0
 
 // macro representing the desired level
-#define LEVEL_1 1
-#define LEVEL_2 2
-#define LEVEL_3 3
-#define LEVEL_4 4
+#define MAP_1 1
+#define MAP_2 2
+#define MAP_3 3
 
 // macro representing the path to the desired input file
-#define LEVEL_1_PATH "resources/csv/basics.csv"
-#define LEVEL_2_PATH "resources/csv/duplicates.csv"
-#define LEVEL_3_PATH "resources/csv/advanced.csv"
+#define MAP_1_PATH "resources/csv/basics.csv"
+#define MAP_2_PATH "resources/csv/duplicates.csv"
+#define MAP_3_PATH "resources/csv/advanced.csv"
 
 // macro representing the error that has been encountered
 #define FILE_OPEN_ERROR   "error opening the requested .csv file"

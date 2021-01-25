@@ -24,7 +24,7 @@ void display_image()
 {
 	while (true)
 	{
-		cv::imshow("map", OUTPUT);
+		cv::imshow(WINDOW, OUTPUT);
 		cv::waitKey(1);
 	}
 }
@@ -95,7 +95,6 @@ cv::Mat update_ui_field()
 	return target;
 }
 
-// processes the image based on the given flag
 int preprocess_mat(cv::Mat target, int flag, int debug)
 {
 	if (!debug) 
@@ -115,19 +114,17 @@ int preprocess_mat(cv::Mat target, int flag, int debug)
 	return OK;
 }
 
-// saves the contours
 int process_mat(cv::Mat target, cv::Mat output)
 {	
 	int debug = DEBUG_OFF;
 
-	// process the image based on the flag 
 	if (!preprocess_mat(target, BLUR,    debug)) std::cout << PREPROCESS_ERROR << ": blur"    << std::endl;
 	if (!preprocess_mat(target, TO_HSV,  debug)) std::cout << PREPROCESS_ERROR << ": to_hsv"  << std::endl;
 	if (!preprocess_mat(target, ISOLATE, debug)) std::cout << PREPROCESS_ERROR << ": isolate" << std::endl;  // this doesn't. why??
 
 	cv::inRange(target, LOWER_LIMIT, UPPER_LIMIT, target); // this works
 	OUTPUT = target;
-	std::this_thread::sleep_for(std::chrono::seconds(5));
+	//std::this_thread::sleep_for(std::chrono::seconds(5));
 
 	// detects contours
 	std::vector<std::vector<cv::Point> > contours;
@@ -191,7 +188,7 @@ int process_mat(cv::Mat target, cv::Mat output)
 
 bool coord_comp(ENTITY left, ENTITY right) { return std::get<0>(left.body) < std::get<0>(right.body); }
 
-bool equal(const cv::Mat& shape1, const cv::Mat& shape2)
+bool shape_match(const cv::Mat& shape1, const cv::Mat& shape2)
 {
 	if ((shape1.rows != shape2.rows) || (shape1.cols != shape2.cols))
 		return false;
@@ -240,16 +237,21 @@ void export_entities_duplicates()
 			if (ENTITIES[i].cont_id == ENTITIES[j].cont_id) continue;
 			double match = cv::matchShapes(CONTOURS[ENTITIES[i].cont_id], CONTOURS[ENTITIES[j].cont_id], 1, 0.0);
 
-			// debug matches between two entities
-			printf("((%d, %d), (%d, %d)): %f\n", std::get<0>(ENTITIES[i].body), std::get<1>(ENTITIES[i].body),
-											     std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body), match);
-
 			// while debugging, i found out that some entities have a contour match as following: 0 < match < 1*10^(-7) 
 			// because of this, changing the condition from (match == 0) to being lower than a certain threshold solves the problem
 			if (match <= 0.00001)
 			{
-				output.push_back(ENTITIES[j]);
-				skippable.push_back(j);
+				if (shape_match(ENTITIES[i].shape, ENTITIES[j].shape))
+				{
+					output.push_back(ENTITIES[j]);
+					skippable.push_back(j);
+
+					printf("(%d, %d) W: %d, H: %d, ", std::get<0>(ENTITIES[i].body), std::get<1>(ENTITIES[i].body),
+													  std::get<2>(ENTITIES[i].body), std::get<3>(ENTITIES[i].body));
+					printf("also found at (%d, %d)\n", std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body));
+
+					continue;
+				}
 			}
 		}
 
@@ -274,21 +276,43 @@ void export_entities_rotated()
 			if (ENTITIES[i].cont_id == ENTITIES[j].cont_id) continue;
 			double match = cv::matchShapes(CONTOURS[ENTITIES[i].cont_id], CONTOURS[ENTITIES[j].cont_id], 1, 0.0);
 
-			printf("((%d, %d), (%d, %d)): %f\n", std::get<0>(ENTITIES[i].body), std::get<1>(ENTITIES[i].body),
-				std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body), match);
-
+			// while debugging, i found out that some entities have a contour match as following: 0 < match < 1*10^(-7) 
+			// because of this, changing the condition from (match == 0) to being lower than a certain threshold solves the problem
 			if (match <= 0.00001)
 			{
+				printf("(%d, %d) W: %d, H: %d, ", std::get<0>(ENTITIES[i].body), std::get<1>(ENTITIES[i].body),
+												  std::get<2>(ENTITIES[i].body), std::get<3>(ENTITIES[i].body));
 				output.push_back(ENTITIES[j]);
 				skippable.push_back(j);
-				// compares if the two shapes are the same, to check if there is any rotation
-				if (equal(ENTITIES[i].shape, ENTITIES[j].shape)) { std::cout << "shape also match" << std::endl; continue; }
 				
-				if (equal(ENTITIES[i].shape, rotate_shape(ENTITIES[j].shape,  90))) { std::cout << "shape also match at 90"  << std::endl; continue; }
-				if (equal(ENTITIES[i].shape, rotate_shape(ENTITIES[j].shape, 180))) { std::cout << "shape also match at 180" << std::endl; continue; }
-				if (equal(ENTITIES[i].shape, rotate_shape(ENTITIES[j].shape, 270))) { std::cout << "shape also match at 270" << std::endl; continue; }
+				if (shape_match(ENTITIES[i].shape, ENTITIES[j].shape)) 
+				{
+					printf("also found at (%d, %d)\n", std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body));
+					continue;
+				}
+				
+				// compares if the two shapes are the same, to check if there is any rotation
+				if (shape_match(ENTITIES[i].shape, rotate_shape(ENTITIES[j].shape,  90))) 
+				{ 
+					printf("also found at (%d, %d), rotated by 90 degrees\n", std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body));
+					continue;
+				}
+				if (shape_match(ENTITIES[i].shape, rotate_shape(ENTITIES[j].shape, 180))) 
+				{
+					printf("also found at (%d, %d), rotated by 180 degrees\n", std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body));
+					continue;
+				}
+				if (shape_match(ENTITIES[i].shape, rotate_shape(ENTITIES[j].shape, 270))) 
+				{
+					printf("also found at (%d, %d), rotated by 270 degree\n", std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body));
+					continue;
+				}
 			}
 		}
+
+		for (auto i : output)
+			if (output.size() == 1)
+				printf(FORMAT_BASICS, std::get<0>(i.body), std::get<1>(i.body), std::get<2>(i.body), std::get<3>(i.body));
 	}
 }
 
@@ -313,27 +337,69 @@ void reset_globals()
 	HEIGHT = 1;
 	ENTITY_COUNTER = 0;
 
-	OUTPUT = cv::Mat(cv::Size(WIDTH, HEIGHT), CV_8UC3, BLACK);
 	ENTITIES.clear();
 	FIELD.clear();
 	CONTOURS.clear();
 }
 
 // todo and delete
+// this needs an update, very NOT elegant approach to CLI implementation
 void console_command()
 {
 	std::string input;
 	std::cout << "> ";
 	while (std::cin >> input)
 	{
-		std::cout << "> ";
-		if (input == "start")
+		if (input == "level1")
 		{
-			if (!init_field_data(LEVEL_3)) { std::cout << "error trying to import data" << std::endl; break;  }
+
+			if (!init_field_data(MAP_1)) { std::cout << "error trying to import data" << std::endl; break;  }
+			//debug_field_data();
+
+			cv::Mat window = update_ui_field();
+			id_entry_point(LEVEL_1, window);
+
+			reset_globals();
+			std::cout << "> ";
+		}
+
+		if (input == "level2")
+		{
+
+			if (!init_field_data(MAP_1)) { std::cout << "error trying to import data" << std::endl; break; }
+			//debug_field_data();
+
+			cv::Mat window = update_ui_field();
+			id_entry_point(LEVEL_2, window);
+
+			reset_globals();
+			std::cout << "> ";
+		}
+
+		if (input == "level3")
+		{
+
+			if (!init_field_data(MAP_2)) { std::cout << "error trying to import data" << std::endl; break; }
+			//debug_field_data();
+
+			cv::Mat window = update_ui_field();
+			id_entry_point(LEVEL_3, window);
+
+			reset_globals();
+			std::cout << "> ";
+		}
+
+		if (input == "level4")
+		{
+
+			if (!init_field_data(MAP_3)) { std::cout << "error trying to import data" << std::endl; break; }
 			//debug_field_data();
 
 			cv::Mat window = update_ui_field();
 			id_entry_point(LEVEL_4, window);
+
+			reset_globals();
+			std::cout << "> ";
 		}
 		if (input == "exit") { exit(EXIT_SUCCESS); }
 	}

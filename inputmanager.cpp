@@ -46,16 +46,16 @@ namespace im
 		return field;
 	}
 
-	std::tuple<int, int, std::vector<std::vector<int>>> get_input_data(int level_id)
+	std::tuple<int, int, std::vector<std::vector<int>>> get_input_data(int map_id)
 	{
-		if (level_id == LEVEL_1)
-			return std::make_tuple(LINE_COUNT, COL_COUNT, get_file_input(LEVEL_1_PATH));
+		if (map_id == MAP_1)
+			return std::make_tuple(LINE_COUNT, COL_COUNT, get_file_input(MAP_1_PATH));
 
-		if (level_id == LEVEL_2)
-			return std::make_tuple(LINE_COUNT, COL_COUNT, get_file_input(LEVEL_2_PATH));
+		if (map_id == MAP_2)
+			return std::make_tuple(LINE_COUNT, COL_COUNT, get_file_input(MAP_2_PATH));
 
-		if (level_id == LEVEL_3)
-			return std::make_tuple(LINE_COUNT, COL_COUNT, get_file_input(LEVEL_3_PATH));
+		if (map_id == MAP_3)
+			return std::make_tuple(LINE_COUNT, COL_COUNT, get_file_input(MAP_3_PATH));
 
 		throw std::invalid_argument(INVALID_ID_CALL);
 	}

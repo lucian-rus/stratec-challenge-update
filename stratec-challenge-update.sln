@@ -5,6 +5,12 @@ VisualStudioVersion = 16.0.30907.101
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "stratec-challenge-update", "stratec-challenge-update.vcxproj", "{7CB8B417-04DD-4CDE-BA36-BC039BC62607}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E570136F-B9EC-437D-83E2-1B505AADA6E6}"
+	ProjectSection(SolutionItems) = preProject
+		stratec-challenge-update.vcxproj = stratec-challenge-update.vcxproj
+		stratec-challenge-update.vcxproj.filters = stratec-challenge-update.vcxproj.filters
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
