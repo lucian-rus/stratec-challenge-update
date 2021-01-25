@@ -8,6 +8,7 @@
 // window properties
 int WIDTH  = 1;
 int HEIGHT = 1;
+int DEBUG  = DEBUG_OFF;
 
 // entity-related globals
 int ENTITY_COUNTER;
@@ -20,11 +21,15 @@ std::vector<std::vector<cv::Point>> CONTOURS;
 
 /*********************** functions *************************/
 
+// test for some additional stuff on the gui window
+void mouse_callback(int event, int x, int y, int flag, void* param) { if (event == cv::EVENT_MOUSEMOVE) std::cout << x << " " << y << std::endl; }
+
 void display_image()
 {
 	while (true)
-	{
+	{		
 		cv::imshow(WINDOW, OUTPUT);
+		cv::setMouseCallback(WINDOW, mouse_callback);
 		cv::waitKey(1);
 	}
 }
@@ -107,7 +112,7 @@ int preprocess_mat(cv::Mat target, int flag, int debug)
 	}
 
 	// if debugging is enabled, convert the image based on the flag then send it to OUTPUT
-	preprocess_mat(target, flag, 0);
+	preprocess_mat(target, flag, DEBUG_OFF);
 	OUTPUT = target;
 	std::this_thread::sleep_for(std::chrono::seconds(5));
 
@@ -116,15 +121,17 @@ int preprocess_mat(cv::Mat target, int flag, int debug)
 
 int process_mat(cv::Mat target, cv::Mat output)
 {	
-	int debug = DEBUG_OFF;
+	OUTPUT = target;
+	if (DEBUG) std::this_thread::sleep_for(std::chrono::seconds(5));
 
-	if (!preprocess_mat(target, BLUR,    debug)) std::cout << PREPROCESS_ERROR << ": blur"    << std::endl;
-	if (!preprocess_mat(target, TO_HSV,  debug)) std::cout << PREPROCESS_ERROR << ": to_hsv"  << std::endl;
-	if (!preprocess_mat(target, ISOLATE, debug)) std::cout << PREPROCESS_ERROR << ": isolate" << std::endl;  // this doesn't. why??
+	if (!preprocess_mat(target, BLUR,    DEBUG)) std::cout << PREPROCESS_ERROR << ": blur"    << std::endl;
+	if (!preprocess_mat(target, TO_HSV,  DEBUG)) std::cout << PREPROCESS_ERROR << ": to_hsv"  << std::endl;
+	if (!preprocess_mat(target, ISOLATE, DEBUG)) std::cout << PREPROCESS_ERROR << ": isolate" << std::endl;  // this doesn't. why??
 
 	cv::inRange(target, LOWER_LIMIT, UPPER_LIMIT, target); // this works
 	OUTPUT = target;
-	//std::this_thread::sleep_for(std::chrono::seconds(5));
+	// this stays here until i figure out why the cv::inRange method does not work above
+	if (DEBUG) std::this_thread::sleep_for(std::chrono::seconds(5));
 
 	// detects contours
 	std::vector<std::vector<cv::Point> > contours;
@@ -173,12 +180,15 @@ int process_mat(cv::Mat target, cv::Mat output)
 		// arbitrary values based on personal taste on visuals
 		int tl_x = boundRect[i].tl().x - SIZE_MULTIPLIER + 5;
 		int tl_y = boundRect[i].tl().y - SIZE_MULTIPLIER + 5;
-
 		int br_x = boundRect[i].br().x + SIZE_MULTIPLIER - 5;
 		int br_y = boundRect[i].br().y + SIZE_MULTIPLIER - 5;
-
 		cv::rectangle(output, cv::Point(tl_x, tl_y), cv::Point(br_x, br_y), RED, 5);
-		cv::rectangle(output, cv::Point(boundRect[i].tl().x - 10, boundRect[i].tl().y - 10), cv::Point(boundRect[i].tl().x - 1, boundRect[i].tl().y - 1), BLUE, cv::FILLED);
+
+		int tl_ox = boundRect[i].tl().x - SIZE_MULTIPLIER;
+		int tl_oy = boundRect[i].tl().y - SIZE_MULTIPLIER;
+		int br_ox = boundRect[i].tl().x - 1;
+		int br_oy = boundRect[i].tl().y - 1;
+		cv::rectangle(output, cv::Point(tl_ox, tl_oy), cv::Point(br_ox, br_oy), BLUE, cv::FILLED);
 	}
 
 	OUTPUT = output;
@@ -246,8 +256,8 @@ void export_entities_duplicates()
 					output.push_back(ENTITIES[j]);
 					skippable.push_back(j);
 
-					printf("(%d, %d) W: %d, H: %d, ", std::get<0>(ENTITIES[i].body), std::get<1>(ENTITIES[i].body),
-													  std::get<2>(ENTITIES[i].body), std::get<3>(ENTITIES[i].body));
+					printf("(%d, %d) W: %d, H: %d, ", std::get<0>(ENTITIES[i].body), std::get<1>(ENTITIES[i].body), 
+						std::get<2>(ENTITIES[i].body), std::get<3>(ENTITIES[i].body));
 					printf("also found at (%d, %d)\n", std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body));
 
 					continue;
@@ -280,8 +290,8 @@ void export_entities_rotated()
 			// because of this, changing the condition from (match == 0) to being lower than a certain threshold solves the problem
 			if (match <= 0.00001)
 			{
-				printf("(%d, %d) W: %d, H: %d, ", std::get<0>(ENTITIES[i].body), std::get<1>(ENTITIES[i].body),
-												  std::get<2>(ENTITIES[i].body), std::get<3>(ENTITIES[i].body));
+				printf("(%d, %d) W: %d, H: %d, ", std::get<0>(ENTITIES[i].body), std::get<1>(ENTITIES[i].body), 
+					std::get<2>(ENTITIES[i].body), std::get<3>(ENTITIES[i].body));
 				output.push_back(ENTITIES[j]);
 				skippable.push_back(j);
 				
@@ -331,6 +341,8 @@ void id_entry_point(int selected_level, cv::Mat target)
 	if (selected_level == LEVEL_4) export_entities_rotated();
 }
 
+void set_debug(int debug_value) { DEBUG = debug_value; }
+
 void reset_globals()
 {
 	WIDTH  = 1;
@@ -342,65 +354,3 @@ void reset_globals()
 	CONTOURS.clear();
 }
 
-// todo and delete
-// this needs an update, very NOT elegant approach to CLI implementation
-void console_command()
-{
-	std::string input;
-	std::cout << "> ";
-	while (std::cin >> input)
-	{
-		if (input == "level1")
-		{
-
-			if (!init_field_data(MAP_1)) { std::cout << "error trying to import data" << std::endl; break;  }
-			//debug_field_data();
-
-			cv::Mat window = update_ui_field();
-			id_entry_point(LEVEL_1, window);
-
-			reset_globals();
-			std::cout << "> ";
-		}
-
-		if (input == "level2")
-		{
-
-			if (!init_field_data(MAP_1)) { std::cout << "error trying to import data" << std::endl; break; }
-			//debug_field_data();
-
-			cv::Mat window = update_ui_field();
-			id_entry_point(LEVEL_2, window);
-
-			reset_globals();
-			std::cout << "> ";
-		}
-
-		if (input == "level3")
-		{
-
-			if (!init_field_data(MAP_2)) { std::cout << "error trying to import data" << std::endl; break; }
-			//debug_field_data();
-
-			cv::Mat window = update_ui_field();
-			id_entry_point(LEVEL_3, window);
-
-			reset_globals();
-			std::cout << "> ";
-		}
-
-		if (input == "level4")
-		{
-
-			if (!init_field_data(MAP_3)) { std::cout << "error trying to import data" << std::endl; break; }
-			//debug_field_data();
-
-			cv::Mat window = update_ui_field();
-			id_entry_point(LEVEL_4, window);
-
-			reset_globals();
-			std::cout << "> ";
-		}
-		if (input == "exit") { exit(EXIT_SUCCESS); }
-	}
-}

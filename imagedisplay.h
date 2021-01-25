@@ -127,10 +127,16 @@ int process_mat(cv::Mat target, cv::Mat output);
 void id_entry_point(int selected_level, cv::Mat target);
 
 /**
- * This function handles the console input, for the moment. It's just a placeholder for the
- * future implementation
+ * This function enables/disables the debugger
+ *
+ * @param
+ */
+void set_debug(int debug_value);
+
+/**
+ * This function resets the values of the globals
  * 
  */
-void console_command();
+void reset_globals();
 
 #endif
