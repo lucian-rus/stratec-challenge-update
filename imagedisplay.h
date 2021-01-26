@@ -14,6 +14,9 @@
 #define SIZE_MULTIPLIER     10
 #define BOUNDARY_CORRECTION  2
 
+// macro used for the dimension of the gui 
+#define GUI_HEIGHT 100
+
 // macro representing the desired level
 #define LEVEL_1 1
 #define LEVEL_2 2
@@ -48,6 +51,12 @@
 
 // macros used as formatters
 #define FORMAT_BASICS "(%d, %d) W: %d, H: %d\n"
+#define FORMAT_STD    "(%d, %d) W: %d, H: %d, "
+#define FORMAT_DUP    "also found at (%d, %d)\n"
+#define FORMAT_90D    "also found at (%d, %d), rotated by 90 degrees\n"
+#define FORMAT_180D   "also found at (%d, %d), rotated by 180 degrees\n"
+#define FORMAT_270D   "also found at (%d, %d), rotated by 270 degrees\n"
+
 
 // error macros
 #define PREPROCESS_ERROR "error while preprocessing image"
@@ -85,7 +94,7 @@ void debug_field_data();
  * 
  * @return
  */
-int init_field_data(int level);
+int init_field_data(int level, std::string path);
 
 /**
  * This function is used to create the field based on the collected data

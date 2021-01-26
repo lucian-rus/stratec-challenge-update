@@ -46,7 +46,7 @@ namespace im
 		return field;
 	}
 
-	std::tuple<int, int, std::vector<std::vector<int>>> get_input_data(int map_id)
+	std::tuple<int, int, std::vector<std::vector<int>>> get_input_data(int map_id, std::string map_u_path)
 	{
 		if (map_id == MAP_1)
 			return std::make_tuple(LINE_COUNT, COL_COUNT, get_file_input(MAP_1_PATH));
@@ -56,6 +56,9 @@ namespace im
 
 		if (map_id == MAP_3)
 			return std::make_tuple(LINE_COUNT, COL_COUNT, get_file_input(MAP_3_PATH));
+
+		if (map_id == MAP_U)
+			return std::make_tuple(LINE_COUNT, COL_COUNT, get_file_input(map_u_path));
 
 		throw std::invalid_argument(INVALID_ID_CALL);
 	}

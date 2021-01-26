@@ -14,6 +14,7 @@
 #define MAP_1 1
 #define MAP_2 2
 #define MAP_3 3
+#define MAP_U 10
 
 // macro representing the path to the desired input file
 #define MAP_1_PATH "resources/csv/basics.csv"
@@ -48,7 +49,7 @@ namespace im
 	 *
 	 * @param level_id Integer representing the level from which the data is collected
 	 */
-	std::tuple<int, int, std::vector<std::vector<int>>> get_input_data(int level_id);
+	std::tuple<int, int, std::vector<std::vector<int>>> get_input_data(int level_id, std::string map_u_path);
 }
 
 #endif 

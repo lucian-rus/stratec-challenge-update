@@ -2,6 +2,7 @@
 #include "imagedisplay.h"
 
 #include <stdio.h>
+#include <string>
 
 /************************* globals **************************/
 
@@ -26,8 +27,22 @@ void mouse_callback(int event, int x, int y, int flag, void* param) { if (event 
 
 void display_image()
 {
+	cv::Mat gui(cv::Size(WIDTH, GUI_HEIGHT), CV_8UC3, FIELD_C);
+
 	while (true)
 	{		
+		
+		/*
+		cv::Mat3b gui_3b = gui;
+		cv::Mat3b out_3b = OUTPUT;
+		// this adds a gui image below the OUTPUT image
+		// throws an error because of the channels being different (CV_8UC3 and CV_8UC1)
+		int height = HEIGHT + GUI_HEIGHT;
+		cv::Mat3b output(WIDTH, height, cv::Vec3b(0,0,0));
+		out_3b.copyTo(output(cv::Rect(NULL, NULL, out_3b.cols, out_3b.rows)));
+		gui_3b.copyTo(output(cv::Rect(NULL, HEIGHT, gui_3b.cols, gui_3b.rows)));
+		*/
+
 		cv::imshow(WINDOW, OUTPUT);
 		cv::setMouseCallback(WINDOW, mouse_callback);
 		cv::waitKey(1);
@@ -47,17 +62,17 @@ void debug_field_data()
 	}
 
 	std::cout << "number of lines:   " << line_count << std::endl;
-	std::cout << "number of columns: " << col_count << std::endl;
+	std::cout << "number of columns: " << col_count  << std::endl;
 }
 
-int init_field_data(int level)
+int init_field_data(int level, std::string path)
 {
 	int line_count;
 	int col_count;
 
 	// try getting level data
 	try {
-		std::tie(line_count, col_count, FIELD) = im::get_input_data(level);
+		std::tie(line_count, col_count, FIELD) = im::get_input_data(level, path);
 	}
 	catch (std::string e) { std::cout << e << std::endl; return NOT_OK; }
 
@@ -256,9 +271,9 @@ void export_entities_duplicates()
 					output.push_back(ENTITIES[j]);
 					skippable.push_back(j);
 
-					printf("(%d, %d) W: %d, H: %d, ", std::get<0>(ENTITIES[i].body), std::get<1>(ENTITIES[i].body), 
+					printf(FORMAT_STD, std::get<0>(ENTITIES[i].body), std::get<1>(ENTITIES[i].body),
 						std::get<2>(ENTITIES[i].body), std::get<3>(ENTITIES[i].body));
-					printf("also found at (%d, %d)\n", std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body));
+					printf(FORMAT_DUP, std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body));
 
 					continue;
 				}
@@ -290,31 +305,31 @@ void export_entities_rotated()
 			// because of this, changing the condition from (match == 0) to being lower than a certain threshold solves the problem
 			if (match <= 0.00001)
 			{
-				printf("(%d, %d) W: %d, H: %d, ", std::get<0>(ENTITIES[i].body), std::get<1>(ENTITIES[i].body), 
+				printf(FORMAT_STD, std::get<0>(ENTITIES[i].body), std::get<1>(ENTITIES[i].body),
 					std::get<2>(ENTITIES[i].body), std::get<3>(ENTITIES[i].body));
 				output.push_back(ENTITIES[j]);
 				skippable.push_back(j);
 				
 				if (shape_match(ENTITIES[i].shape, ENTITIES[j].shape)) 
 				{
-					printf("also found at (%d, %d)\n", std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body));
+					printf(FORMAT_DUP, std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body));
 					continue;
 				}
 				
 				// compares if the two shapes are the same, to check if there is any rotation
 				if (shape_match(ENTITIES[i].shape, rotate_shape(ENTITIES[j].shape,  90))) 
 				{ 
-					printf("also found at (%d, %d), rotated by 90 degrees\n", std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body));
+					printf(FORMAT_90D, std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body));
 					continue;
 				}
 				if (shape_match(ENTITIES[i].shape, rotate_shape(ENTITIES[j].shape, 180))) 
 				{
-					printf("also found at (%d, %d), rotated by 180 degrees\n", std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body));
+					printf(FORMAT_180D, std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body));
 					continue;
 				}
 				if (shape_match(ENTITIES[i].shape, rotate_shape(ENTITIES[j].shape, 270))) 
 				{
-					printf("also found at (%d, %d), rotated by 270 degree\n", std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body));
+					printf(FORMAT_270D, std::get<0>(ENTITIES[j].body), std::get<1>(ENTITIES[j].body));
 					continue;
 				}
 			}
